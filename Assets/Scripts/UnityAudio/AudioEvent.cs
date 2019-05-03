@@ -1,71 +1,57 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using EasyButtons;
 
 public class AudioEvent : MonoBehaviour
 {
     [Header("AUDIO VARIATIONS")]
-    public ShuffleTypes shuffleType;
-    public float pithVariationSt;
-    [Header("Debug")]
-    public AudioSource[] soundList;
-    public int[] playOrder;
+    public ShuffleTypes shuffleType = ShuffleTypes.RandomInTheRestart;
+    public float pithVariationSt = 5;
+    [SerializeField]
+    private float[] playDelay = new float[1];
+
+    [Header("SoundList Info")]
+    [SerializeField]
+    private AudioSource[] soundList;
+    private int[] playOrder;
+    [SerializeField]
+    private int currentSoundPlaying;
+    private int currentSoundIndex; 
+
+    [Header("Instances Info")]
+    [SerializeField]
     public List<AudioSource> instances;
-    public int currentSoundIndex;
-    public int currentInstances, maxInstances = 5;
-    public List<Amplitudes> amplitudes;
-    public class Amplitudes
+    public int currentInstances;
+    [SerializeField]
+    private int maxInstances = 5;
+
+    /*     Debug     */
+    private bool randomized = false;
+
+    /*     Test     */
+    private List<Amplitudes> amplitudes;
+    private class Amplitudes
     {
-        public float[] amplitude = new float[2];
+        private float[] amplitude = new float[2];
     }
-    public bool randomized = false;
     int a;
     // Start is called before the first frame update
     void Start()
     {
-        soundList = GetComponentsInChildren<AudioSource>();
-        transform.parent.GetComponent<SoundSelector>().GetSoundEvents(transform);
-        playOrder = new int[soundList.Length];
-        for(int i = 0; i < playOrder.Length; i++)
-            playOrder[i] = i;
-    }
-    public void PlaySound()
-    {
-        if(currentInstances > maxInstances - 1)                     /* VERIFICA SE CHEGOU NO LIMITE MAXIMO DE INSTANCIAS E APAGA A PRIMEIRA */
-        {
-            GameObject aux = instances[0].gameObject;                       //  Cria o ponteiro
-            instances.RemoveAt(0);                                          //Remove o elemento da lista
-            Destroy(aux);                                                   //Destroi o Objeto
-            currentInstances--;                                             //Diminue o contador
-        }
-
-        GameObject eventInstance = new GameObject("a = "+a++);                                  //Cria a instancia
-        eventInstance.transform.parent = gameObject.transform;                                  //Faz com que a instancia seja filha desse objeto
-        AudioSource currentSound = eventInstance.AddComponent<AudioSource>();                   //Adiciona uma fonte de audio
-        currentSound = Shuffle();                                                               //Ajusta as configurações dessa fonte com base na função Shuffle
-        PitchChange(currentSound);                                                              //Altera o pitch do audio
-        currentSound.Play();                                                                    //Da Play no clip
-        eventInstance.AddComponent<EventInstance>().creator = GetComponent<AudioEvent>();       //Adiciona o Script da instancia e da a referencia desse objeto
-        currentInstances++;
-
-                
-        /* for(int i = 0; i < instances.Count; i++)
-        {
-            instances[i].clip.GetData(Amplitudes[i].amplitude, instances[instances.Count-1].timeSamples);
-            print(amplitude[0]);
-        } */
+        GetAudioAssets();
     }
     public enum ShuffleTypes 
     {
-        NoShuffle, RandomOnce, RandomInTheStart, FullRandom
+        NoShuffle, RandomOnce, RandomInTheRestart, FullRandom
     }
-
     AudioSource Shuffle()
     {
         if(shuffleType == ShuffleTypes.NoShuffle)                                       /* NÃO EMBARALHA, REPRODUZ NA SEQUENCIA ORIGINAL */
         {
             if(currentSoundIndex == soundList.Length)
                 currentSoundIndex = 0;                                                      //Volta pra o começo da lista
+            currentSoundPlaying = playOrder[currentSoundIndex];
             return soundList[currentSoundIndex++];                                          //Retorna o som e Aumenta para a proxima reprodução
         }
         else if(shuffleType == ShuffleTypes.RandomOnce)                                 /* EMBARALHA APENAS UMA VEZ E REPRODUZ EM SEQUENCIA */
@@ -78,21 +64,25 @@ public class AudioEvent : MonoBehaviour
                 currentSoundIndex = 0;                                                      //Volta pra o começo da lista
                 RandomizeIntArray(playOrder);                                               //Embaralha
             }            
+            currentSoundPlaying = playOrder[currentSoundIndex];
             return soundList[playOrder[currentSoundIndex++]];                               //Retorna o som com base na NOVA Lista de Reprodução e Aumenta para a proxima reprodução
         }
-        else if(shuffleType == ShuffleTypes.RandomInTheStart)                           /* EMBARALHA SEMPRE QUE COMEÇAR A SEQUENCIA NOVAMENTE */
+        else if(shuffleType == ShuffleTypes.RandomInTheRestart)                           /* EMBARALHA SEMPRE QUE COMEÇAR A SEQUENCIA NOVAMENTE */
         {
             if(currentSoundIndex == playOrder.Length)
                 currentSoundIndex = 0;                                                      //Volta pra o começo da lista
             if(currentSoundIndex == 0)
                 RandomizeIntArray(playOrder);                                               //Embaralha
-            return soundList[playOrder[currentSoundIndex++]];                               //Retorna o som com base na NOVA Lista de Reprodução e Aumenta para a proxima reprodução
+            currentSoundPlaying = playOrder[currentSoundIndex];
+            return soundList[playOrder[currentSoundIndex++]];
+            /* return soundList[playOrder[currentSoundIndex++]]; */                               //Retorna o som com base na NOVA Lista de Reprodução e Aumenta para a proxima reprodução
         }
         else                                                                            /* EMBARALHA SEMPRE QUE FOR TOCAR UM SOM */
         {
             RandomizeIntArray(playOrder);                                                   //Embaralha
             if(currentSoundIndex == playOrder.Length)
                 currentSoundIndex = 0;                                                      //Volta pra o começo da lista
+            currentSoundPlaying = playOrder[currentSoundIndex];
             return soundList[playOrder[currentSoundIndex++]];                               //Retorna o som com base na NOVA Lista de Reprodução e Aumenta para a proxima reprodução
         }
     }
@@ -110,5 +100,67 @@ public class AudioEvent : MonoBehaviour
                 array[i] = array[rand];
                 array[rand] = aux;
             }
+    }
+    [ContextMenu("Play Sound")]
+    [Button]
+    public void PlaySound()
+    {
+        CounterChange();
+    }
+    public void CounterChange()
+    {
+        if(currentInstances > maxInstances - 1)                     /* VERIFICA SE CHEGOU NO LIMITE MAXIMO DE INSTANCIAS E APAGA A PRIMEIRA */
+        {
+            GameObject aux = instances[0].gameObject;                       //  Cria o ponteiro
+            instances.RemoveAt(0);                                          //Remove o elemento da lista
+            Destroy(aux);                                                   //Destroi o Objeto
+            currentInstances--;                                             //Diminue o contador
+        }
+        for(int i = 0; i < playDelay.Length; i++)
+        {
+            print(i);
+            print(playDelay.Length);
+            yield return new WaitForSeconds(playDelay[i]);
+            print(".");
+            InstanciateAudioObject();
+            print(Time.time);
+        }
+        /* for(int i = 0; i < playDelay.Length; i++)
+        {
+            float oldTime = Time.time;
+            float newTime = oldTime;
+
+            while(newTime < oldTime+playDelay[i])
+                newTime = Time.time;
+            
+            InstanciateAudioObject();
+        } */
+        /* for(int i = 0; i < instances.Count; i++)
+        {
+            instances[i].clip.GetData(Amplitudes[i].amplitude, instances[instances.Count-1].timeSamples);
+            print(amplitude[0]);
+        } */
+    }
+    void InstanciateAudioObject()
+    {
+        GameObject eventInstance = new GameObject("a = "+a++);                                  //Cria a instancia
+        eventInstance.transform.parent = gameObject.transform;                                  //Faz com que a instancia seja filha desse objeto
+        AudioSource currentSound = eventInstance.AddComponent<AudioSource>();                   //Adiciona uma fonte de audio
+        currentSound = Shuffle();                                                               //Ajusta as configurações dessa fonte com base na função Shuffle
+        PitchChange(currentSound);                                                              //Altera o pitch do audio
+        currentSound.Play();                                                                    //Da Play no clip
+        eventInstance.AddComponent<EventInstance>().creator = GetComponent<AudioEvent>();       //Adiciona o Script da instancia e da a referencia desse objeto
+        currentInstances++;
+
+    }
+    [ContextMenu("Get Audio Assets")]
+    [Button]
+    void GetAudioAssets()
+    {
+        soundList = GetComponentsInChildren<AudioSource>();
+        transform.parent.GetComponent<SoundSelector>().GetSoundEvents(transform);
+        playOrder = new int[soundList.Length];
+        for(int i = 0; i < playOrder.Length; i++)
+            playOrder[i] = i;
     }
 }
