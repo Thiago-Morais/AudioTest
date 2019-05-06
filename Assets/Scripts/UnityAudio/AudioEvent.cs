@@ -101,7 +101,6 @@ public class AudioEvent : MonoBehaviour
                 array[rand] = aux;
             }
     }
-    [ContextMenu("Play Sound")]
     [Button]
     public void PlaySound()
     {
@@ -152,7 +151,6 @@ public class AudioEvent : MonoBehaviour
         currentInstances++;
 
     }
-    [ContextMenu("Get Audio Assets")]
     [Button]
     void GetAudioAssets()
     {
