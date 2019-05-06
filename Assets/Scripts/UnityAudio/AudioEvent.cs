@@ -105,10 +105,12 @@ public class AudioEvent : MonoBehaviour
     [Button]
     public void PlaySound()
     {
-        CounterChange();
+        print("check1");
+        StartCoroutine(CounterChange());
     }
-    public void CounterChange()
+    public IEnumerator CounterChange()
     {
+        print("check2");
         if(currentInstances > maxInstances - 1)                     /* VERIFICA SE CHEGOU NO LIMITE MAXIMO DE INSTANCIAS E APAGA A PRIMEIRA */
         {
             GameObject aux = instances[0].gameObject;                       //  Cria o ponteiro
@@ -118,12 +120,8 @@ public class AudioEvent : MonoBehaviour
         }
         for(int i = 0; i < playDelay.Length; i++)
         {
-            print(i);
-            print(playDelay.Length);
             yield return new WaitForSeconds(playDelay[i]);
-            print(".");
             InstanciateAudioObject();
-            print(Time.time);
         }
         /* for(int i = 0; i < playDelay.Length; i++)
         {
@@ -143,6 +141,7 @@ public class AudioEvent : MonoBehaviour
     }
     void InstanciateAudioObject()
     {
+        print("check3");
         GameObject eventInstance = new GameObject("a = "+a++);                                  //Cria a instancia
         eventInstance.transform.parent = gameObject.transform;                                  //Faz com que a instancia seja filha desse objeto
         AudioSource currentSound = eventInstance.AddComponent<AudioSource>();                   //Adiciona uma fonte de audio

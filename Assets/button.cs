@@ -6,10 +6,6 @@ using EasyButtons;
 public class button : MonoBehaviour
 {
     public int wat;
-    void Start()
-    {
-        print("start");
-    }
     [Button]
     public void SayName()
     {
